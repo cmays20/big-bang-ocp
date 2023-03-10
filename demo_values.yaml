@@ -1,5 +1,7 @@
 openshift: true
 
+domain: mays-demo.com
+
 monitoring:
   enabled: true
   git:
@@ -10,8 +12,12 @@ monitoring:
       enabled: true
 
     prometheusOperator:
-      namespaces:
-        releaseNamespace: true
+      alertmanagerInstanceNamespaces: ['monitoring']
+      alertmanagerConfigNamespaces: ['monitoring']
+      prometheusInstanceNamespaces: ['monitoring']
+      thanosRulerInstanceNamespaces: ['monitoring']
+      #namespaces:
+        #releaseNamespace: true
       kubeletService:
         enabled: false
 
@@ -19,44 +25,31 @@ monitoring:
 
       thanosService:
         enabled: true
-      thanosServiceMonitor:
+      thanosServiceMonitor: 
         enabled: true
 
       prometheusSpec:
         thanos:
           baseImage: registry1.dso.mil/ironbank/opensource/thanos/thanos
-          version: v0.29.0
+          version: v0.29.0 
         podMonitorNamespaceSelector:
           matchExpressions:
             - key: openshift.io/cluster-monitoring
               operator: NotIn
               values:
                 - 'true'
-            - key: openshift.io/user-monitoring
-              operator: NotIn
-              values:
-                - 'false'
         probeNamespaceSelector:
           matchExpressions:
             - key: openshift.io/cluster-monitoring
               operator: NotIn
               values:
                 - 'true'
-            - key: openshift.io/user-monitoring
-              operator: NotIn
-              values:
-                - 'false'
         serviceMonitorNamespaceSelector:
           matchExpressions:
             - key: openshift.io/cluster-monitoring
               operator: NotIn
               values:
                 - 'true'
-            - key: openshift.io/user-monitoring
-              operator: NotIn
-              values:
-                - 'false'
-
 
 eckoperator:
   enabled: true
@@ -129,7 +122,7 @@ clusterAuditor:
 
 gatekeeper:
   enabled: true
-  git:
+  git: 
     tag: 3.10.0-bb.2
   values:
     replicas: 1
@@ -153,7 +146,7 @@ gatekeeper:
       allowedDockerRegistries:
         enforcementAction: dryrun
         parameters:
-          repos:
+          repos: 
             - registry1.dso.mil
             - quay.io
             - registry.redhat.io
@@ -164,8 +157,8 @@ gatekeeper:
         enabled: false
       httpsOnly:
         enforcementAction: dryrun
-        parameters:
-          excludedResources:
+        parameters: 
+          excludedResources: 
             - harbor/cm-acme-http-solver-.*
             - gitlab/cm-acme-http-solver-.*
       uniqueIngressHost:
@@ -174,7 +167,7 @@ gatekeeper:
           excludedResources:
             - harbor/cm-acme-http-solver-.*
             - gitlab/cm-acme-http-solver-.*
-
+      
 istiooperator:
   enabled: true
   git:
@@ -206,19 +199,19 @@ jaeger:
     branch: "cmays-openshift-1"
   values:
     jaeger:
-      spec:
+      spec: 
         ingress:
           security: none
 
-kiali:
+kiali: 
   enabled: true
   git:
     tag: null
     branch: "cmays-openshift-1"
-  values:
-    cr:
-      spec:
-        identity:
+  values: 
+    cr: 
+      spec: 
+        identity: 
           cert_file: ""
           private_key_file: ""
 
@@ -226,7 +219,7 @@ twistlock:
   enabled: false # twistlock requires a license to work, so we're disabling it
 
 addons:
-  sonarqube:
+  sonarqube: 
     enabled: true
     git:
       tag: null
@@ -235,21 +228,21 @@ addons:
       serviceAccount:
         create: true
       postgresql:
-        securityContext:
-          enabled: true
-        serviceAccount:
+        securityContext: 
+          enabled: true 
+        serviceAccount: 
           enabled: true
 
-  argocd:
+  argocd: 
     enabled: true
     git:
       tag: null
       branch: "cmays-openshift-1"
-    values:
-      openshift:
+    values: 
+      openshift: 
         enabled: true
-      configs:
-        cm:
+      configs: 
+        cm: 
           resource.exclusions: |
             - apiGroups:
               - "tekton.dev"
@@ -257,95 +250,104 @@ addons:
               - "PipelineRun"
               clusters:
               - "*"
-        params:
+        params: 
           redis.server: argocd-argocd-redis-bb-master:6379
 
   gitlab:
     enabled: true
-    istio:
+    istio: 
       enabled: false
       injection: disabled
     flux:
       timeout: 30m
-    values:
-      global:
-        hosts:
+    values: 
+      istio:
+        gitlab: 
+          enabled: false
+        registry: 
+          enabled: false
+      global: 
+        hosts: 
           domain: mays-demo.com
-          gitlab:
+          gitlab: 
             name: gitlab.mays-demo.com
-          registry:
+          registry: 
             name: registry.mays-demo.com
 
-        ingress:
+        ingress: 
           enabled: true
-          tls:
+          tls: 
             enabled: true
           class: none
-          annotations:
+          annotations: 
             route.openshift.io/termination: "edge"
             kubernetes.io/ingress.allow-http: "false"
             kubernetes.io/tls-acme: true
             cert-manager.io/cluster-issuer: letsencrypt
-      nginx-ingress:
+      nginx-ingress: 
         enabled: false
       certmanager:
         install: false
-      registry:
-        ingress:
+      registry: 
+        ingress: 
           enabled: true
-          tls:
+          tls: 
             secretName: gitlab-registry-tls
-      gitlab:
-        webservice:
-          ingress:
+      gitlab: 
+        webservice: 
+          ingress: 
             enabled: true
             tls:
               secretName: gitlab-gitlab-tls
-        gitlab-shell:
+        gitlab-shell: 
           enabled: false
-      minio:
-        ingress:
-          tls:
+      minio: 
+        ingress: 
+          tls: 
             secretName: gitlab-minio-tls
 
   gitlabRunner:
     enabled: true
 
 wrapper:
-  git:
+  git: 
     repo: https://repo1.dso.mil/big-bang/apps/wrapper
     path: chart
     branch: main
-packages:
+packages:  
   harbor:
     enabled: true
     istio:
-      injection: false
-    git:
+      injection: false    
+    git: 
       repo: https://repo1.dso.mil/big-bang/apps/sandbox/harbor.git
       path: chart
       tag: 1.10.2-bb.6
-    values:
+    values: 
       expose:
         type: ingress
         ingress:
           annotations:
+            route.openshift.io/termination: "edge"
             kubernetes.io/ingress.allow-http: "false"
-          hosts:
+            kubernetes.io/tls-acme: "true"
+            cert-manager.io/cluster-issuer: letsencrypt
+          hosts: 
             core: harbor.mays-demo.com
             notary: harbor-notary.mays-demo.com
         tls:
           enabled: true
           certSource: secret
-          secret:
+          secret: 
             secretName: harbor-letsencrypt-cert
-            notarySecretName: harbor-letsencrypt-cert
-      core:
+            notarySecretName: harbor-notary-letsencrypt-cert
+      core: 
         secretName: harbor-letsencrypt-cert
       internalTLS:
         enabled: false
       externalURL: https://harbor.mays-demo.com
-      bbtests:
+      bbtests: 
         enabled: false
-      networkPolicies:
+      networkPolicies: 
         enabled: false
+
