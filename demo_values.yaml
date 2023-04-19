@@ -21,6 +21,15 @@ monitoring:
       kubeletService:
         enabled: false
 
+    kube-state-metrics:
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+
     prometheus:
 
       thanosService:
@@ -29,6 +38,8 @@ monitoring:
         enabled: true
 
       prometheusSpec:
+        retention: 2d
+
         thanos:
           baseImage: registry1.dso.mil/ironbank/opensource/thanos/thanos
           version: v0.29.0 
@@ -78,33 +89,39 @@ logging:
     branch: "cmays-openshift-1"
   values:
     kibana:
-      count: 1
+      count: 2
       resources:
         requests:
           cpu: 400m
           memory: 1Gi
         limits:
-          cpu: null  # nonexistent cpu limit results in faster spin up
-          memory: null
+          cpu: 1000m
+          memory: 2Gi
     elasticsearch:
       master:
         count: 3
         resources:
           requests:
-            cpu: 400m
-            memory: 2Gi
+            cpu: 2000m
+            memory: 4Gi
           limits:
-            cpu: null
-            memory: null
+            cpu: 2000m
+            memory: 4Gi
+        heap:
+          min: 3g
+          max: 3g
       data:
         count: 3
         resources:
           requests:
-            cpu: 400m
-            memory: 2Gi
+            cpu: 2000m
+            memory: 8Gi
           limits:
-            cpu: null
-            memory: null
+            cpu: 2000m
+            memory: 8Gi
+        heap: 
+          min: 7g
+          max: 7g
 
 clusterAuditor:
   enabled: true
@@ -125,7 +142,7 @@ gatekeeper:
   git: 
     tag: 3.10.0-bb.2
   values:
-    replicas: 1
+    replicas: 3 
     controllerManager:
       resources:
         requests:
@@ -181,16 +198,12 @@ istio:
     branch: "cmays-openshift-1"
   values:
     profile: "openshift"
-    values: # possible values found here https://istio.io/v1.5/docs/reference/config/installation-options (ignore 1.5, latest docs point here)
-      global: # global istio operator values
-        proxy: # mutating webhook injected istio sidecar proxy's values
-          resources:
-            requests:
-              cpu: 0m # null get ignored if used here
-              memory: 0Mi
-            limits:
-              cpu: 0m
-              memory: 0Mi
+    ingressGateways:
+      public-ingressgateway:
+        k8s: 
+          hpaSpec:
+            minReplicas: 3
+            maxReplicas: 5
 
 jaeger:
   enabled: true
@@ -284,6 +297,9 @@ addons:
             kubernetes.io/ingress.allow-http: "false"
             kubernetes.io/tls-acme: true
             cert-manager.io/cluster-issuer: letsencrypt
+        appConfig: 
+          initialDefaults: 
+            signupEnabled: false
       nginx-ingress: 
         enabled: false
       certmanager:
@@ -303,8 +319,7 @@ addons:
           enabled: false
       minio: 
         ingress: 
-          tls: 
-            secretName: gitlab-minio-tls
+          enabled: false
 
   gitlabRunner:
     enabled: true
@@ -324,6 +339,8 @@ packages:
       path: chart
       tag: 1.10.2-bb.6
     values: 
+      updateStrategy:
+        type: Recreate
       expose:
         type: ingress
         ingress:
@@ -343,11 +360,57 @@ packages:
             notarySecretName: harbor-notary-letsencrypt-cert
       core: 
         secretName: harbor-letsencrypt-cert
+        replicas: 2
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: 500m
+          limits:
+            memory: 1024Mi
+            cpu: 1000m
       internalTLS:
         enabled: false
       externalURL: https://harbor.mays-demo.com
+      redis:
+        external:
+          addr: harbor-redis-bb-master:6379
+      registry:
+        registry: 
+          resources: 
+            requests: 
+              memory: 512Mi
+              cpu: 500m
+            limits: 
+              memory: 1024Mi
+              cpu: 1000m
+        controller:
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 500m
+            limits:
+              memory: 1024Mi
+              cpu: 1000m
+        replicas: 1 
+      notary: 
+        server: 
+          resources: 
+            requests: 
+              memory: 256Mi
+              cpu: 100m
+            limits: 
+              memory: 512Mi
+              cpu: 500m
+        signer:
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi
+              cpu: 500m
       bbtests: 
         enabled: false
       networkPolicies: 
-        enabled: false
+        enabled: true
 
